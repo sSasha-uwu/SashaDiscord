@@ -1,4 +1,5 @@
 import multiprocessing
+import time
 from collections.abc import Callable
 from typing import override
 
@@ -16,17 +17,26 @@ bots: list[Callable[..., None]] = [
 
 
 class ReloadHandler(FileSystemEventHandler):
+    def __init__(self) -> None:
+        self._last_reload = 0.0
+        self._cooldown = 2.0  # seconds
+
     @override
     def on_modified(self, event: FileSystemEvent) -> None:
-        if str(event.src_path).endswith(".py") and ".venv" not in str(
-            event.src_path,
+        now = time.time()
+        if (
+            str(event.src_path).endswith(".py")
+            and ".venv" not in str(event.src_path)
+            and now - self._last_reload > self._cooldown
         ):
+            self._last_reload = now
             run_bots()
 
 
 def run_bots() -> None:
     for process in processes:
         process.terminate()
+        process.join()  # ← Wait for the process to fully stop
     processes.clear()
     for bot_function in bots:
         process = multiprocessing.Process(target=bot_function)
