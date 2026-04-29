@@ -33,6 +33,9 @@ class ReloadHandler(FileSystemEventHandler):
         ):
             self._last_reload = now
             run_bots()
+            print("=============================================================")
+            print(f"Reloaded bots due to changes in {event.src_path}")
+            print("=============================================================")
 
 
 def run_bots() -> None:
