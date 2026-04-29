@@ -1,8 +1,10 @@
+import json
 import multiprocessing
 import time
 from collections.abc import Callable
 from typing import override
 
+from common import EMOTE_LOG, ENV_FILE
 from watchdog.events import FileSystemEvent, FileSystemEventHandler
 from watchdog.observers import Observer
 
@@ -45,6 +47,15 @@ def run_bots() -> None:
 
 
 if __name__ == "__main__":
+    if not EMOTE_LOG.exists():
+        with EMOTE_LOG.open(mode="w", encoding="utf-8") as f:
+            json.dump({"titan": {}, "bahamut": {}}, f, indent=4)
+    if not ENV_FILE.exists():
+        with ENV_FILE.open(mode="w", encoding="utf-8") as f:
+            f.write(
+                "TITAN_API_KEY=your_titan_api_key\n"
+                "BAHAMUT_API_KEY=your_bahamut_api_key\n",
+            )
     event_handler = ReloadHandler()
     observer = Observer()
     observer.schedule(event_handler, ".", recursive=True)

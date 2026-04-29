@@ -7,12 +7,7 @@ from pathlib import Path
 
 EMOTE_LOG = Path("bots/emote_log.json")
 
-TITAN_DISCORD_ID = 0
-TITAN_API_KEY = ""
-
-BAHAMUT_DISCORD_ID = 0
-BAHAMUT_API_KEY = ""
-
+ENV_FILE = Path(".env")
 
 BOT_ERROR_MESSAGE = """
 <a:explodehamut:1016989707973951529> i hav braim bramage <a:explodehamut:1016989707973951529>
@@ -21,6 +16,9 @@ pls send help
 
 ```{error}```
 """
+
+TITAN_API_KEY = ENV_FILE.read_text(encoding="utf-8").split("TITAN_API_KEY=")[1].splitlines()[0]
+BAHAMUT_API_KEY = ENV_FILE.read_text(encoding="utf-8").split("BAHAMUT_API_KEY=")[1].splitlines()[0]
 
 
 def get_emote_log(bot: str) -> dict[str, int]:
