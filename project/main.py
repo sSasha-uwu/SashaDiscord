@@ -1,12 +1,8 @@
 import json
 import multiprocessing
-import time
 from collections.abc import Callable
-from typing import override
 
 from common import EMOTE_LOG, ENV_FILE
-from watchdog.events import FileSystemEvent, FileSystemEventHandler
-from watchdog.observers import Observer
 
 from bots.bahamut import bahamut_bot
 from bots.titan import titan_bot
@@ -16,26 +12,6 @@ bots: list[Callable[..., None]] = [
     titan_bot,
     bahamut_bot,
 ]
-
-
-class ReloadHandler(FileSystemEventHandler):
-    def __init__(self) -> None:
-        self._last_reload = 0.0
-        self._cooldown = 2.0  # seconds
-
-    @override
-    def on_modified(self, event: FileSystemEvent) -> None:
-        now = time.time()
-        if (
-            str(event.src_path).endswith(".py")
-            and ".venv" not in str(event.src_path)
-            and now - self._last_reload > self._cooldown
-        ):
-            self._last_reload = now
-            run_bots()
-            print("=============================================================")
-            print(f"Reloaded bots due to changes in {event.src_path}")
-            print("=============================================================")
 
 
 def run_bots() -> None:
@@ -59,12 +35,4 @@ if __name__ == "__main__":
                 "TITAN_API_KEY=your_titan_api_key\n"
                 "BAHAMUT_API_KEY=your_bahamut_api_key\n",
             )
-    event_handler = ReloadHandler()
-    observer = Observer()
-    observer.schedule(event_handler, ".", recursive=True)
-    observer.start()
     run_bots()
-    try:
-        observer.join()
-    except KeyboardInterrupt:
-        observer.stop()
