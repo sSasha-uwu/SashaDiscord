@@ -1,5 +1,7 @@
 #!/usr/bin/env bash
 set -euo pipefail
+
+./update.sh
  
 export PATH="$PATH:$HOME/.local/bin"
 export PYTHONPATH=.
