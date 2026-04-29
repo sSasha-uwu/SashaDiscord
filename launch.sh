@@ -1,7 +1,9 @@
 #!/usr/bin/env bash
 set -euo pipefail
 
-./update.sh
+git fetch --all
+git reset --hard origin/main
+git pull origin main
  
 export PATH="$PATH:$HOME/.local/bin"
 export PYTHONPATH=.
