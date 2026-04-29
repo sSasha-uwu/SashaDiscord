@@ -5,6 +5,15 @@
 import json
 from pathlib import Path
 
+
+def get_titan_key() -> str:
+    return ENV_FILE.read_text(encoding="utf-8").split("TITAN_API_KEY=")[1].splitlines()[0]
+
+
+def get_bahamut_key() -> str:
+    return ENV_FILE.read_text(encoding="utf-8").split("BAHAMUT_API_KEY=")[1].splitlines()[0]
+
+
 EMOTE_LOG = Path("bots/emote_log.json")
 
 ENV_FILE = Path(".env")
@@ -17,8 +26,8 @@ pls send help
 ```{error}```
 """
 
-TITAN_API_KEY = ENV_FILE.read_text(encoding="utf-8").split("TITAN_API_KEY=")[1].splitlines()[0]
-BAHAMUT_API_KEY = ENV_FILE.read_text(encoding="utf-8").split("BAHAMUT_API_KEY=")[1].splitlines()[0]
+TITAN_API_KEY = get_titan_key()
+BAHAMUT_API_KEY = get_bahamut_key()
 
 
 def get_emote_log(bot: str) -> dict[str, int]:
