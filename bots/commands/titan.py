@@ -46,6 +46,7 @@ async def eightballtan(
     if selected_emoji == "thonk":
         await ctx.send(secrets.choice(thonk_emojis))
     await ctx.send(selected_emoji)
+    await ctx.send("good job it works, only took like 30 minutes you idiot")
 
 
 @commands.command(name="stats")

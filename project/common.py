@@ -7,10 +7,14 @@ from pathlib import Path
 
 
 def get_titan_key() -> str:
+    if not ENV_FILE.exists():
+        ENV_FILE.write_text("TITAN_API_KEY=your_titan_api_key\nBAHAMUT_API_KEY=your_bahamut_api_key\n", encoding="utf-8")
     return ENV_FILE.read_text(encoding="utf-8").split("TITAN_API_KEY=")[1].splitlines()[0]
 
 
 def get_bahamut_key() -> str:
+    if not ENV_FILE.exists():
+        ENV_FILE.write_text("TITAN_API_KEY=your_titan_api_key\nBAHAMUT_API_KEY=your_bahamut_api_key\n", encoding="utf-8")
     return ENV_FILE.read_text(encoding="utf-8").split("BAHAMUT_API_KEY=")[1].splitlines()[0]
 
 
