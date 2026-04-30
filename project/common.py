@@ -1,6 +1,8 @@
 import json
 from pathlib import Path
 
+from discord.ext import commands
+
 
 def get_titan_key() -> str:
     if not ENV_FILE.exists():
@@ -39,6 +41,28 @@ BAHAMUT_API_KEY = get_bahamut_key()
 
 hamut_emotes: dict[str, str] = {}
 titan_emotes: dict[str, str] = {}
+
+def get_hamut_emotes(ctx: commands.Context[commands.Bot]) -> dict[str, str]:
+    if not hamut_emotes:
+        for guild in ctx.bot.guilds:
+            for emoji in guild.emojis:
+                emoji_raw = str(emoji)
+                if "hamut" in emoji_raw:
+                    emoji_str = emoji_raw.split(":")[1].split(":", maxsplit=1)[0]
+                    hamut_emotes[emoji_str] = emoji_raw
+                    print(f"Loaded Bahamut emote: {emoji_str}")
+    return hamut_emotes
+
+def get_titan_emotes(ctx: commands.Context[commands.Bot]) -> dict[str, str]:
+    if not titan_emotes:
+        for guild in ctx.bot.guilds:
+            for emoji in guild.emojis:
+                emoji_raw = str(emoji)
+                if "tan" in emoji_raw:
+                    emoji_str = emoji_raw.split(":")[1].split(":", maxsplit=1)[0]
+                    titan_emotes[emoji_str] = emoji_raw
+                    print(f"Loaded Titan emote: {emoji_str}")
+    return titan_emotes
 
 
 def get_emote_log(bot: str) -> dict[str, int]:

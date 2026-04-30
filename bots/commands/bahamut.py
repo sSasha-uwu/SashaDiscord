@@ -8,19 +8,12 @@ from discord.ext import commands
 from movielite import ImageClip, VideoClip, VideoWriter  # pyright: ignore[reportMissingTypeStubs]
 from PIL import Image
 
-from project.common import get_emote_log, hamut_emotes, update_emote_log
+from project.common import get_emote_log, get_hamut_emotes, update_emote_log
 
 
 @commands.command(name="bahamut")
 async def bahamut(ctx: commands.Context[commands.Bot]) -> None:
-    if not hamut_emotes:
-        for guild in ctx.bot.guilds:
-            for emoji in guild.emojis:
-                emoji_raw = str(emoji)
-                if "hamut" in emoji_raw:
-                    emoji_str = emoji_raw.split(":")[1].split(":", maxsplit=1)[0]
-                    hamut_emotes[emoji_str] = emoji_raw
-                    print(f"Loaded Bahamut emote: {emoji_str} -> {emoji_raw}")
+    hamut_emotes = get_hamut_emotes(ctx)
     selected_emoji = secrets.choice(list(hamut_emotes.values()))
     update_emote_log(selected_emoji, "bahamut")
     await ctx.send(selected_emoji)
@@ -28,6 +21,7 @@ async def bahamut(ctx: commands.Context[commands.Bot]) -> None:
 
 @commands.command(name="fliphamut")
 async def fliphamut(ctx: commands.Context[commands.Bot]) -> None:
+    hamut_emotes = get_hamut_emotes(ctx)
     await ctx.send(
         secrets.choice(
             [hamut_emotes["layhamut"], hamut_emotes["bahamut"], hamut_emotes["aushamut6"]],
