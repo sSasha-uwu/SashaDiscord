@@ -3,13 +3,14 @@ import secrets
 
 from discord.ext import commands
 
-from project.common import get_emote_log, titan_emotes, update_emote_log
+from project.common import get_emote_log, get_titan_emotes, update_emote_log
 
 
 @commands.command(name="titan")
 async def titan(
     ctx: commands.Context[commands.Bot],
 ) -> None:
+    titan_emotes = get_titan_emotes(ctx)
     selected_emoji = secrets.choice(list(titan_emotes.values()))
     update_emote_log(selected_emoji, "titan")
     await ctx.send(selected_emoji)
@@ -19,6 +20,7 @@ async def titan(
 async def eightballtan(
     ctx: commands.Context[commands.Bot],
 ) -> None:
+    titan_emotes = get_titan_emotes(ctx)
     selected_emoji = secrets.choice([
         titan_emotes["yestan"],
         titan_emotes["notan"],
