@@ -17,9 +17,6 @@ def titan_bot() -> None:
         help_command=None,
     )
 
-    with open("test.log") as f:
-        f.write(str(len(bot.guilds)))
-
     for guild in bot.guilds:
         for emoji in guild.emojis:
             emoji_raw = str(emoji)
@@ -35,7 +32,7 @@ def titan_bot() -> None:
     ) -> None:
         if isinstance(error, CommandNotFound):
             return
-        await ctx.send(TITAN_ERROR_MESSAGE.format(error=error, cri=titan_emotes["criteetan"]))
+        await ctx.send(TITAN_ERROR_MESSAGE.format(error=error, cri=":criteetan:"))
         raise error
 
     @bot.event

@@ -27,7 +27,7 @@ def bahamut_bot() -> None:
     ) -> None:
         if isinstance(error, CommandNotFound):
             return
-        await ctx.send(BAHAMUT_ERROR_MESSAGE.format(error=error, explode=hamut_emotes["explodehamut"]))
+        await ctx.send(BAHAMUT_ERROR_MESSAGE.format(error=error, explode="explodehamut"))
         raise error
 
     @bot.event
