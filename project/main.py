@@ -1,16 +1,25 @@
+import asyncio
 import json
 import multiprocessing
-from collections.abc import Callable, Coroutine
-from typing import Any
+from collections.abc import Callable
 
 from common import EMOTE_LOG, ENV_FILE
 
 from bots.bahamut import bahamut_bot
 from bots.titan import titan_bot
 
-bots: dict[str, Callable[..., Coroutine[Any, Any, None]]] = {
-    "Titan": titan_bot,
-    "Bahamut": bahamut_bot,
+
+def run_titan_bot() -> None:
+    asyncio.run(titan_bot())
+
+
+def run_bahamut_bot() -> None:
+    asyncio.run(bahamut_bot())
+
+
+bots: dict[str, Callable[[], None]] = {
+    "Titan": run_titan_bot,
+    "Bahamut": run_bahamut_bot,
 }
 
 
