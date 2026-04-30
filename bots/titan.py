@@ -17,7 +17,8 @@ def titan_bot() -> None:
         help_command=None,
     )
 
-    print(len(bot.guilds))
+    with open("test.log") as f:
+        f.write(str(len(bot.guilds)))
 
     for guild in bot.guilds:
         for emoji in guild.emojis:
