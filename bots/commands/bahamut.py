@@ -13,6 +13,14 @@ from project.common import get_emote_log, hamut_emotes, update_emote_log
 
 @commands.command(name="bahamut")
 async def bahamut(ctx: commands.Context[commands.Bot]) -> None:
+    if not hamut_emotes:
+        for guild in ctx.bot.guilds:
+            for emoji in guild.emojis:
+                emoji_raw = str(emoji)
+                if "hamut" in emoji_raw:
+                    emoji_str = emoji_raw.split(":")[1].split(":", maxsplit=1)[0]
+                    hamut_emotes[emoji_str] = emoji_raw
+                    print(f"Loaded Bahamut emote: {emoji_str} -> {emoji_raw}")
     selected_emoji = secrets.choice(list(hamut_emotes.values()))
     update_emote_log(selected_emoji, "bahamut")
     await ctx.send(selected_emoji)

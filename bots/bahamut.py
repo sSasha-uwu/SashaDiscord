@@ -10,10 +10,10 @@ from bots.commands.bahamut import (
     layhamut,
     stats,
 )
-from project.common import BAHAMUT_API_KEY, BAHAMUT_ERROR_MESSAGE, hamut_emotes
+from project.common import BAHAMUT_API_KEY, BAHAMUT_ERROR_MESSAGE
 
 
-async def bahamut_bot() -> None:
+def bahamut_bot() -> None:
     bot = commands.Bot(
         command_prefix="!",
         intents=discord.Intents.all(),
@@ -39,12 +39,4 @@ async def bahamut_bot() -> None:
     bot.add_command(layhamut)
     bot.add_command(stats)
 
-    await bot.start(BAHAMUT_API_KEY)
-
-    for guild in bot.guilds:
-        for emoji in guild.emojis:
-            emoji_raw = str(emoji)
-            if "hamut" in emoji_raw:
-                emoji_str = emoji_raw.split(":")[1].split(":", maxsplit=1)[0]
-                hamut_emotes[emoji_str] = emoji_raw
-                print(f"Loaded Bahamut emote: {emoji_str} -> {emoji_raw}")
+    bot.run(BAHAMUT_API_KEY)

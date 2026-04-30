@@ -7,10 +7,10 @@ from bots.commands.titan import (
     stats,
     titan,
 )
-from project.common import TITAN_API_KEY, TITAN_ERROR_MESSAGE, titan_emotes
+from project.common import TITAN_API_KEY, TITAN_ERROR_MESSAGE
 
 
-async def titan_bot() -> None:
+def titan_bot() -> None:
     bot = commands.Bot(
         command_prefix="!",
         intents=discord.Intents.all(),
@@ -35,12 +35,4 @@ async def titan_bot() -> None:
     bot.add_command(eightballtan)
     bot.add_command(stats)
 
-    await bot.start(TITAN_API_KEY)
-
-    for guild in bot.guilds:
-        for emoji in guild.emojis:
-            emoji_raw = str(emoji)
-            if "tan" in emoji_raw:
-                emoji_str = emoji_raw.split(":")[1].split(":", maxsplit=1)[0]
-                titan_emotes[emoji_str] = emoji_raw
-                print(f"Loaded Titan emote: {emoji_str} -> {emoji_raw}")
+    bot.run(TITAN_API_KEY)
