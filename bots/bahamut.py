@@ -1,7 +1,3 @@
-#!/usr/bin/env python
-# Copyright 2025
-"""..."""
-
 import discord
 from discord.ext import commands
 from discord.ext.commands import (  # pyright: ignore[reportMissingTypeStubs]
@@ -14,11 +10,10 @@ from bots.commands.bahamut import (
     layhamut,
     stats,
 )
-from project.common import BAHAMUT_API_KEY, BOT_ERROR_MESSAGE
+from project.common import BAHAMUT_API_KEY, BAHAMUT_ERROR_MESSAGE, hamut_emotes
 
 
 def bahamut_bot() -> None:
-    """..."""
     bot = commands.Bot(
         command_prefix="!",
         intents=discord.Intents.all(),
@@ -30,20 +25,26 @@ def bahamut_bot() -> None:
         ctx: commands.Context[commands.Bot],
         error: Exception,
     ) -> None:
-        """..."""
         if isinstance(error, CommandNotFound):
             return
-        await ctx.send(BOT_ERROR_MESSAGE.format(error=error))
+        await ctx.send(BAHAMUT_ERROR_MESSAGE.format(error=error, explode=hamut_emotes["explodehamut"]))
         raise error
 
     @bot.event
     async def on_message(message: discord.Message) -> None:  # pyright: ignore[reportUnusedFunction]
-        """..."""
         await bot.process_commands(message)
 
     bot.add_command(bahamut)
     bot.add_command(fliphamut)
     bot.add_command(layhamut)
     bot.add_command(stats)
+
+    for guild in bot.guilds:
+        for emoji in guild.emojis:
+            emoji_raw = str(emoji)
+            if "hamut" in emoji_raw:
+                emoji_str = emoji_raw.split(":")[1].split(":", maxsplit=1)[0]
+                hamut_emotes[emoji_str] = emoji_raw
+                print(f"Loaded Bahamut emote: {emoji_str} -> {emoji_raw}")
 
     bot.run(BAHAMUT_API_KEY)

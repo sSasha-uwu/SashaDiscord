@@ -8,36 +8,27 @@ from discord.ext import commands
 from movielite import ImageClip, VideoClip, VideoWriter  # pyright: ignore[reportMissingTypeStubs]
 from PIL import Image
 
-from project.common import get_emote_log, update_emote_log
+from project.common import get_emote_log, hamut_emotes, update_emote_log
 
 
 @commands.command(name="bahamut")
 async def bahamut(ctx: commands.Context[commands.Bot]) -> None:
-    """..."""
-    emojis: list[str] = []
-    for guild in ctx.bot.guilds:
-        emojis.extend(str(emoji) for emoji in guild.emojis)
-
-    hamut_emojis = [emoji for emoji in emojis if "hamut" in emoji]
-    selected_emoji = secrets.choice(hamut_emojis)
+    selected_emoji = secrets.choice(list(hamut_emotes.values()))
     update_emote_log(selected_emoji, "bahamut")
     await ctx.send(selected_emoji)
 
 
 @commands.command(name="fliphamut")
 async def fliphamut(ctx: commands.Context[commands.Bot]) -> None:
-    """..."""
-    emojis: list[str] = [
-        "<:layhamut:775246960101556245>",
-        "<:bahamut:568693994264199178>",
-        "<:aushamut6:841469050110476319>",
-    ]
-    await ctx.send(secrets.choice(emojis))
+    await ctx.send(
+        secrets.choice(
+            [hamut_emotes["layhamut"], hamut_emotes["bahamut"], hamut_emotes["aushamut6"]],
+        ),
+    )
 
 
 @commands.command(name="stats")
 async def stats(ctx: commands.Context[commands.Bot]) -> None:
-    """..."""
     top_emotes = sorted(
         get_emote_log("bahamut").items(),
         key=operator.itemgetter(1),
@@ -49,8 +40,7 @@ async def stats(ctx: commands.Context[commands.Bot]) -> None:
 
 
 @commands.command(name="layhamut")
-async def layhamut(ctx: commands.Context[commands.Bot]) -> None:  # noqa: PLR0914
-    """Overlay the last 12 frames of a video with a user-provided image."""
+async def layhamut(ctx: commands.Context[commands.Bot]) -> None:
     if not ctx.message.attachments:
         await ctx.send("You didn't attach an image, you retard.")
         return
