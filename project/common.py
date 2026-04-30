@@ -1,7 +1,3 @@
-#!/usr/bin/env python
-# Copyright 2025
-"""..."""
-
 import json
 from pathlib import Path
 
@@ -22,10 +18,18 @@ EMOTE_LOG = Path("bots/emote_log.json")
 
 ENV_FILE = Path(".env")
 
-BOT_ERROR_MESSAGE = """
-<a:explodehamut:1016989707973951529> i hav braim bramage <a:explodehamut:1016989707973951529>
+BAHAMUT_ERROR_MESSAGE = """
+{explode} i hav braim bramage {explode}
 
 pls send help
+
+```{error}```
+"""
+
+TITAN_ERROR_MESSAGE = """
+{cri} i die now thank u foreva {cri}
+
+my mother is an idiota
 
 ```{error}```
 """
@@ -33,21 +37,16 @@ pls send help
 TITAN_API_KEY = get_titan_key()
 BAHAMUT_API_KEY = get_bahamut_key()
 
+hamut_emotes: dict[str, str] = {}
+titan_emotes: dict[str, str] = {}
+
 
 def get_emote_log(bot: str) -> dict[str, int]:
-    """...
-
-    Returns
-    -------
-        dict[str, int]: The emote log for the given bot.
-
-    """
     with EMOTE_LOG.open(mode="r", encoding="utf-8") as f:
         return json.load(f)[bot]  # pyright: ignore[reportAny]
 
 
 def update_emote_log(emote: str, bot: str) -> None:
-    """..."""
     with EMOTE_LOG.open(mode="r", encoding="utf-8") as f:
         emote_log: dict[str, dict[str, int]] = json.load(f)
     if emote not in emote_log[bot]:

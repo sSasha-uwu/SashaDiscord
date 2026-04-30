@@ -4,4 +4,4 @@ version = "1.0.0"
 description = "DiscordBots"
 readme = "README.md"
 requires-python = "==3.13.*"
-dependencies = ["discord.py", "audioop-lts", "watchdog", "movielite", "pillow"]
+dependencies = ["discord.py", "audioop-lts", "movielite", "pillow"]
