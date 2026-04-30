@@ -39,6 +39,8 @@ def bahamut_bot() -> None:
     bot.add_command(layhamut)
     bot.add_command(stats)
 
+    bot.run(BAHAMUT_API_KEY)
+
     for guild in bot.guilds:
         for emoji in guild.emojis:
             emoji_raw = str(emoji)
@@ -46,5 +48,3 @@ def bahamut_bot() -> None:
                 emoji_str = emoji_raw.split(":")[1].split(":", maxsplit=1)[0]
                 hamut_emotes[emoji_str] = emoji_raw
                 print(f"Loaded Bahamut emote: {emoji_str} -> {emoji_raw}")
-
-    bot.run(BAHAMUT_API_KEY)
