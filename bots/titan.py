@@ -10,7 +10,7 @@ from bots.commands.titan import (
 from project.common import TITAN_API_KEY, TITAN_ERROR_MESSAGE, titan_emotes
 
 
-def titan_bot() -> None:
+async def titan_bot() -> None:
     bot = commands.Bot(
         command_prefix="!",
         intents=discord.Intents.all(),
@@ -35,7 +35,7 @@ def titan_bot() -> None:
     bot.add_command(eightballtan)
     bot.add_command(stats)
 
-    bot.run(TITAN_API_KEY)
+    await bot.start(TITAN_API_KEY)
 
     for guild in bot.guilds:
         for emoji in guild.emojis:
