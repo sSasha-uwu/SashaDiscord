@@ -3,8 +3,8 @@ import math
 import operator
 import random
 import secrets
-from pathlib import Path
 import subprocess
+from pathlib import Path
 
 import cv2
 import discord
@@ -281,8 +281,6 @@ async def wheelhamut(ctx: commands.Context[commands.Bot]) -> None:
     proc = subprocess.Popen(ffmpeg_cmd, stdin=subprocess.PIPE, stderr=subprocess.PIPE, stdout=subprocess.PIPE)
 
     print("test2")
-
-    return
 
     print(f"Rendering {total_frames} frames → winner: '{winner_name}' (index {winner_index})")
 
