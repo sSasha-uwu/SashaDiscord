@@ -250,6 +250,8 @@ async def wheelhamut(ctx: commands.Context[commands.Bot]) -> None:
     # Composite background colour
     bg_color = (30, 30, 30)
 
+    print("test")
+
     # Set up ffmpeg process instead of cv2.VideoWriter
     ffmpeg_cmd = [
         "ffmpeg",
@@ -276,7 +278,11 @@ async def wheelhamut(ctx: commands.Context[commands.Bot]) -> None:
         "+faststart",
         output_path,
     ]
-    proc = subprocess.Popen(ffmpeg_cmd, stdin=subprocess.PIPE, stderr=subprocess.PIPE)
+    proc = subprocess.Popen(ffmpeg_cmd, stdin=subprocess.PIPE, stderr=subprocess.PIPE, stdout=subprocess.PIPE)
+
+    print("test2")
+
+    return
 
     print(f"Rendering {total_frames} frames → winner: '{winner_name}' (index {winner_index})")
 
