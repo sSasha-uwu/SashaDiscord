@@ -190,7 +190,7 @@ async def wheelhamut(ctx: commands.Context[commands.Bot]) -> None:
         """Ease-out cubic: starts fast, decelerates to a stop."""
         return 1 - (1 - t) ** 3
 
-    message_text = ctx.message.content["!wheelhamut":]
+    message_text = ctx.message.content.removeprefix("!wheelhamut")
     names = message_text.split(",")
     pin_path = "bots/resources/wheelhamut/wheelhamut.png"
     output_path = "wheelhamut_result.mp4"
