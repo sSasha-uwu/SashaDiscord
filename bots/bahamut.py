@@ -9,6 +9,7 @@ from bots.commands.bahamut import (
     fliphamut,
     layhamut,
     stats,
+    wheelhamut,
 )
 from project.common import BAHAMUT_API_KEY, BAHAMUT_ERROR_MESSAGE, get_hamut_emotes
 
@@ -39,5 +40,6 @@ def bahamut_bot() -> None:
     bot.add_command(fliphamut)
     bot.add_command(layhamut)
     bot.add_command(stats)
+    bot.add_command(wheelhamut)
 
     bot.run(BAHAMUT_API_KEY)
