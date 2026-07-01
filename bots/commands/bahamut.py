@@ -4,6 +4,7 @@ import operator
 import random
 import secrets
 from pathlib import Path
+import subprocess
 
 import cv2
 import discord
@@ -249,9 +250,33 @@ async def wheelhamut(ctx: commands.Context[commands.Bot]) -> None:
     # Composite background colour
     bg_color = (30, 30, 30)
 
-    # Set up video writer
-    fourcc = cv2.VideoWriter.fourcc(*"VP90")
-    writer = cv2.VideoWriter(output_path, fourcc, video_fps, (size, size))
+    # Set up ffmpeg process instead of cv2.VideoWriter
+    ffmpeg_cmd = [
+        "ffmpeg",
+        "-y",
+        "-f",
+        "rawvideo",
+        "-vcodec",
+        "rawvideo",
+        "-s",
+        f"{size}x{size}",
+        "-pix_fmt",
+        "bgr24",
+        "-r",
+        str(video_fps),
+        "-i",
+        "-",
+        "-c:v",
+        "h264_v4l2m2m",  # hardware encoder — swap to libx264 if unavailable
+        "-b:v",
+        "4M",
+        "-pix_fmt",
+        "yuv420p",
+        "-movflags",
+        "+faststart",
+        output_path,
+    ]
+    proc = subprocess.Popen(ffmpeg_cmd, stdin=subprocess.PIPE)
 
     print(f"Rendering {total_frames} frames → winner: '{winner_name}' (index {winner_index})")
 
@@ -275,10 +300,10 @@ async def wheelhamut(ctx: commands.Context[commands.Bot]) -> None:
         pin_y = 660  # top edge; adjust if your pin image has its point at the bottom
         bg.paste(pin_img, (pin_x, pin_y), pin_img)
 
-        # Convert to BGR for OpenCV
+        # Convert to BGR for ffmpeg
         frame_np = np.array(bg.convert("RGB"))
         frame_bgr = cv2.cvtColor(frame_np, cv2.COLOR_RGB2BGR)
-        writer.write(frame_bgr)
+        proc.stdin.write(frame_bgr.astype(np.uint8).tobytes())
 
         if frame_idx % video_fps == 0:
             print(f"  Frame {frame_idx}/{total_frames} ({int(t * 100)}%)")
@@ -288,11 +313,12 @@ async def wheelhamut(ctx: commands.Context[commands.Bot]) -> None:
 
     if frame_bgr is not None:
         for _ in range(hold_frames):
-            writer.write(frame_bgr)
+            proc.stdin.write(frame_bgr.astype(np.uint8).tobytes())
     else:
         raise RuntimeError("I fucked up my soup.")
 
-    writer.release()
+    proc.stdin.close()
+    proc.wait()
 
     await ctx.send(file=discord.File(output_path))
 
