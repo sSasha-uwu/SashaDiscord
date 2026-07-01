@@ -194,9 +194,9 @@ async def wheelhamut(ctx: commands.Context[commands.Bot]) -> None:
     names = message_text.split(",")
     pin_path = "bots/resources/wheelhamut/wheelhamut.png"
     output_path = "wheelhamut_result.mp4"
-    video_size = 320  # Width and height of the output video (square)
-    wheel_radius = 320  # Radius of the wheel in pixels
-    video_fps = 24  # Frames per second
+    video_size = 240  # Width and height of the output video (square)
+    wheel_radius = video_size // 2  # Radius of the wheel in pixels
+    video_fps = 15  # Frames per second
     spin_seconds = 5  # Total duration of the spin animation
     font_size = 56  # Font size for segment labels
     pin_size = 100  # Pin image will be scaled to this size (square)
@@ -250,8 +250,6 @@ async def wheelhamut(ctx: commands.Context[commands.Bot]) -> None:
     # Composite background colour
     bg_color = (30, 30, 30)
 
-    print("test")
-
     # Set up ffmpeg process instead of cv2.VideoWriter
     ffmpeg_cmd = [
         "ffmpeg",
@@ -281,8 +279,6 @@ async def wheelhamut(ctx: commands.Context[commands.Bot]) -> None:
         output_path,
     ]
     proc = subprocess.Popen(ffmpeg_cmd, stdin=subprocess.PIPE)
-
-    print("test2")
 
     print(f"Rendering {total_frames} frames → winner: '{winner_name}' (index {winner_index})")
 
