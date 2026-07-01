@@ -10,7 +10,7 @@ from bots.commands.bahamut import (
     layhamut,
     stats,
 )
-from project.common import BAHAMUT_API_KEY, BAHAMUT_ERROR_MESSAGE
+from project.common import BAHAMUT_API_KEY, BAHAMUT_ERROR_MESSAGE, get_hamut_emotes
 
 
 def bahamut_bot() -> None:
@@ -27,7 +27,8 @@ def bahamut_bot() -> None:
     ) -> None:
         if isinstance(error, CommandNotFound):
             return
-        await ctx.send(BAHAMUT_ERROR_MESSAGE.format(error=error, explode="explodehamut"))
+        hamut_emotes = get_hamut_emotes(ctx)
+        await ctx.send(BAHAMUT_ERROR_MESSAGE.format(error=error, explode=hamut_emotes["explodehamut"] or ""))
         raise error
 
     @bot.event

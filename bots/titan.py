@@ -7,7 +7,7 @@ from bots.commands.titan import (
     stats,
     titan,
 )
-from project.common import TITAN_API_KEY, TITAN_ERROR_MESSAGE
+from project.common import TITAN_API_KEY, TITAN_ERROR_MESSAGE, get_titan_emotes
 
 
 def titan_bot() -> None:
@@ -24,7 +24,8 @@ def titan_bot() -> None:
     ) -> None:
         if isinstance(error, CommandNotFound):
             return
-        await ctx.send(TITAN_ERROR_MESSAGE.format(error=error, cri=":criteetan:"))
+        titan_emotes = get_titan_emotes(ctx)
+        await ctx.send(TITAN_ERROR_MESSAGE.format(error=error, cri=titan_emotes["criteetan"]))
         raise error
 
     @bot.event
