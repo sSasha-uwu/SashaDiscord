@@ -119,6 +119,8 @@ async def layhamut(ctx: commands.Context[commands.Bot]) -> None:
 @commands.command(name="wheelhamut")
 async def wheelhamut(ctx: commands.Context[commands.Bot]) -> None:
 
+    output_path = "wheelhamut_result.mp4"
+
     def render_wheel(ctx: commands.Context[commands.Bot]) -> None:
 
         def draw_wheel(names: list[str], angle_offset: float, size: int, radius: int) -> Image.Image:
@@ -195,7 +197,6 @@ async def wheelhamut(ctx: commands.Context[commands.Bot]) -> None:
         message_text = ctx.message.content.removeprefix("!wheelhamut")
         names = message_text.split(",")
         pin_path = "bots/resources/wheelhamut/wheelhamut.png"
-        output_path = "wheelhamut_result.mp4"
         video_size = 800  # Width and height of the output video (square)
         wheel_radius = 320  # Radius of the wheel in pixels
         video_fps = 24  # Frames per second
@@ -328,10 +329,10 @@ async def wheelhamut(ctx: commands.Context[commands.Bot]) -> None:
         proc.stdin.close()
         proc.wait()
 
-        x = ctx.send(file=discord.File(output_path))
-
-        with contextlib.suppress(FileNotFoundError):
-            Path(output_path).unlink()  # noqa: ASYNC240
-
     loop = asyncio.get_running_loop()
     await loop.run_in_executor(None, partial(render_wheel, ctx))
+
+    await ctx.send(file=discord.File(output_path))
+
+    with contextlib.suppress(FileNotFoundError):
+        Path(output_path).unlink()  # noqa: ASYNC240
