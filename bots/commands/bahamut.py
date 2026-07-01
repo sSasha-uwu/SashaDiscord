@@ -232,13 +232,7 @@ async def wheelhamut(ctx: commands.Context[commands.Bot]) -> None:
         winner_index = winner_index % n
         winner_name = names[winner_index]
 
-        # The pin sits at the top-centre (90° in standard PIL coordinates,
-        # which treats 0° as 3 o'clock and goes clockwise).
-        # We want the winning segment centred at 90° at the end of the spin.
-        # The centre of the winning segment starts at:
-        #   initial_offset + winner_index * slice_deg + slice_deg/2
-        # We want that to equal 90°, so:
-        pin_angle = 90.0
+        pin_angle = 270.0
         winning_centre_at_zero = winner_index * slice_deg + slice_deg / 2
         extra_spins = random.randint(5, 8) * 360  # noqa: S311
         # Normalise so we always spin forward (negative = clockwise in PIL)
