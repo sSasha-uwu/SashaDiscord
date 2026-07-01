@@ -120,6 +120,30 @@ async def layhamut(ctx: commands.Context[commands.Bot]) -> None:
 async def wheelhamut(ctx: commands.Context[commands.Bot]) -> None:
 
     output_path = "wheelhamut_result.mp4"
+    pin_path = "bots/resources/wheelhamut/wheelhamut.png"
+    video_size = 800  # Width and height of the output video (square)
+    wheel_radius = int(video_size // 2.5)  # Radius of the wheel in pixels
+    video_fps = 24  # Frames per second
+    spin_seconds = 5  # Total duration of the spin animation
+    font_size = video_size // 14  # Font size for segment labels
+    pin_size = video_size // 8  # Pin image will be scaled to this size (square)
+    scale = 2
+    pad = 12 * scale
+    # Palette — segments cycle through these colours
+    palette = [
+        "#E63946",
+        "#F4A261",
+        "#2A9D8F",
+        "#457B9D",
+        "#8338EC",
+        "#FB5607",
+        "#3A86FF",
+        "#06D6A0",
+        "#FFBE0B",
+        "#FF006E",
+        "#8AC926",
+        "#6A4C93",
+    ]
 
     def render_wheel(ctx: commands.Context[commands.Bot]) -> None:
 
@@ -196,30 +220,7 @@ async def wheelhamut(ctx: commands.Context[commands.Bot]) -> None:
 
         message_text = ctx.message.content.removeprefix("!wheelhamut")
         names = message_text.split(",")
-        pin_path = "bots/resources/wheelhamut/wheelhamut.png"
-        video_size = 800  # Width and height of the output video (square)
-        wheel_radius = 320  # Radius of the wheel in pixels
-        video_fps = 24  # Frames per second
-        spin_seconds = 5  # Total duration of the spin animation
-        font_size = 56  # Font size for segment labels
-        pin_size = 100  # Pin image will be scaled to this size (square)
-        scale = 2
-        pad = 12 * scale
-        # Palette — segments cycle through these colours
-        palette = [
-            "#E63946",
-            "#F4A261",
-            "#2A9D8F",
-            "#457B9D",
-            "#8338EC",
-            "#FB5607",
-            "#3A86FF",
-            "#06D6A0",
-            "#FFBE0B",
-            "#FF006E",
-            "#8AC926",
-            "#6A4C93",
-        ]
+
         if not names:
             raise ValueError("What am I supposed to put on the wheel you dumb fuck?")
 
