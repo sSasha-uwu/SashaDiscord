@@ -250,7 +250,7 @@ async def wheelhamut(ctx: commands.Context[commands.Bot]) -> None:
     bg_color = (30, 30, 30)
 
     # Set up video writer
-    fourcc = cv2.VideoWriter.fourcc(*"vp80")
+    fourcc = cv2.VideoWriter.fourcc(*"vp09")
     writer = cv2.VideoWriter(output_path, fourcc, video_fps, (size, size))
 
     print(f"Rendering {total_frames} frames → winner: '{winner_name}' (index {winner_index})")
