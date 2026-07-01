@@ -194,7 +194,7 @@ async def wheelhamut(ctx: commands.Context[commands.Bot]) -> None:
     names = message_text.split(",")
     pin_path = "bots/resources/wheelhamut/wheelhamut.png"
     output_path = "wheelhamut_result.mp4"
-    video_size = 800  # Width and height of the output video (square)
+    video_size = 320  # Width and height of the output video (square)
     wheel_radius = 320  # Radius of the wheel in pixels
     video_fps = 24  # Frames per second
     spin_seconds = 5  # Total duration of the spin animation
