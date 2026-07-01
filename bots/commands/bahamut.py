@@ -119,7 +119,7 @@ async def layhamut(ctx: commands.Context[commands.Bot]) -> None:
 @commands.command(name="wheelhamut")
 async def wheelhamut(ctx: commands.Context[commands.Bot]) -> None:
 
-    async def render_wheel_async(ctx: commands.Context[commands.Bot]) -> None:
+    def render_wheel(ctx: commands.Context[commands.Bot]) -> None:
 
         def draw_wheel(names: list[str], angle_offset: float, size: int, radius: int) -> Image.Image:
             """Return a PIL RGBA image of the wheel rotated by angle_offset (degrees)."""
@@ -328,10 +328,10 @@ async def wheelhamut(ctx: commands.Context[commands.Bot]) -> None:
         proc.stdin.close()
         proc.wait()
 
-        await ctx.send(file=discord.File(output_path))
+        x = ctx.send(file=discord.File(output_path))
 
         with contextlib.suppress(FileNotFoundError):
             Path(output_path).unlink()  # noqa: ASYNC240
 
     loop = asyncio.get_running_loop()
-    await loop.run_in_executor(None, partial(render_wheel_async, ctx))
+    await loop.run_in_executor(None, partial(render_wheel, ctx))
