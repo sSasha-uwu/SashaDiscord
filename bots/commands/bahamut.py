@@ -301,7 +301,7 @@ async def wheelhamut(ctx: commands.Context[commands.Bot]) -> None:
 
             # Paste pin at top-centre
             pin_x = size // 2 - pin_size // 2
-            pin_y = 660  # top edge; adjust if your pin image has its point at the bottom
+            pin_y = int(video_size // 1.21)  # top edge; adjust if your pin image has its point at the bottom
             bg.paste(pin_img, (pin_x, pin_y), pin_img)
 
             # Convert to BGR for ffmpeg
