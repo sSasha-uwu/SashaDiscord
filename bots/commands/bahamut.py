@@ -278,7 +278,7 @@ async def wheelhamut(ctx: commands.Context[commands.Bot]) -> None:
         "+faststart",
         output_path,
     ]
-    proc = subprocess.Popen(ffmpeg_cmd, stdin=subprocess.PIPE, stderr=subprocess.PIPE, stdout=subprocess.PIPE)
+    proc = subprocess.Popen(ffmpeg_cmd, stdin=subprocess.PIPE)
 
     print("test2")
 
