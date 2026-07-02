@@ -57,7 +57,7 @@ async def layhamut(ctx: commands.Context[commands.Bot]) -> None:
         return
 
     image_path = Path(f"temp_image_{ctx.author.id}.png")
-    output_path = Path(f"output_video_{ctx.author.id}.mp4")
+    output_path = Path(f"output_video_{ctx.author.id}.webm")
     processed_image_path = Path(f"processed_image_{ctx.author.id}.png")
 
     await ctx.message.attachments[0].save(image_path)
@@ -134,10 +134,11 @@ async def layhamut(ctx: commands.Context[commands.Bot]) -> None:
     def process_work() -> None:
         tmpdir = tempfile.mkdtemp(prefix="layhamut_")
         try:
-            image_clip = Path(tmpdir) / "image_clip.mp4"
-            trimmed = Path(tmpdir) / "trimmed.mp4"
+            image_clip = Path(tmpdir) / "image_clip.webm"
+            trimmed = Path(tmpdir) / "trimmed.webm"
 
             # 1) Create short image clip from the processed image
+            # Use VP8 for WebM output with fast settings for Pi
             cmd_img = [
                 "ffmpeg",
                 "-y",
@@ -150,11 +151,13 @@ async def layhamut(ctx: commands.Context[commands.Bot]) -> None:
                 "-r",
                 str(target_fps),
                 "-c:v",
-                "libx264",
-                "-preset",
-                "ultrafast",
+                "libvpx",
+                "-cpu-used",
+                "5",
                 "-crf",
-                "28",
+                "40",
+                "-b:v",
+                "0",
                 "-pix_fmt",
                 "yuv420p",
                 str(image_clip),
@@ -176,11 +179,13 @@ async def layhamut(ctx: commands.Context[commands.Bot]) -> None:
                 "-vf",
                 f"scale={target_w}:{target_h}",
                 "-c:v",
-                "libx264",
-                "-preset",
-                "ultrafast",
+                "libvpx",
+                "-cpu-used",
+                "5",
                 "-crf",
-                "28",
+                "40",
+                "-b:v",
+                "0",
                 "-pix_fmt",
                 "yuv420p",
                 "-an",
@@ -205,15 +210,19 @@ async def layhamut(ctx: commands.Context[commands.Bot]) -> None:
                 "-map",
                 "2:a",
                 "-c:v",
-                "libx264",
-                "-preset",
-                "ultrafast",
+                "libvpx",
+                "-cpu-used",
+                "5",
                 "-crf",
-                "28",
+                "40",
+                "-b:v",
+                "0",
+                "-pix_fmt",
+                "yuv420p",
                 "-c:a",
-                "aac",
+                "libopus",
                 "-b:a",
-                "128k",
+                "64k",
                 str(output_path),
             ]
             subprocess.run(cmd_concat, check=True)
