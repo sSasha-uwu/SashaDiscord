@@ -63,7 +63,7 @@ async def layhamut(ctx: commands.Context[commands.Bot]) -> None:
     await ctx.message.attachments[0].save(image_path)
     # Use ffprobe to get source video properties (fast) and offload
     # heavy ffmpeg work to a thread to keep the event loop responsive.
-    base_video = Path("bots/resources/layhamut/layhamut.mp4")
+    base_video = Path("bots/resources/layhamut/layhamut.webm")
 
     def ffprobe_info(path: Path) -> tuple[int, int, float, float]:
         cmd = [
