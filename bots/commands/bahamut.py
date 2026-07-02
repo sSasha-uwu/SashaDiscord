@@ -5,9 +5,7 @@ import math
 import operator
 import random
 import secrets
-import shutil
 import subprocess
-import tempfile
 from functools import partial
 from pathlib import Path
 
@@ -58,7 +56,6 @@ async def layhamut(ctx: commands.Context[commands.Bot]) -> None:
 
     image_path = Path(f"temp_image_{ctx.author.id}.png")
     output_path = Path(f"output_video_{ctx.author.id}.webm")
-    processed_image_path = Path(f"processed_image_{ctx.author.id}.png")
 
     await ctx.message.attachments[0].save(image_path)
     # Use ffprobe to get source video properties (fast) and offload
@@ -100,7 +97,7 @@ async def layhamut(ctx: commands.Context[commands.Bot]) -> None:
     src_w, src_h, src_fps, src_dur = ffprobe_info(base_video)
 
     # Target parameters tuned for Raspberry Pi Zero 2 W
-    target_fps = min(int(round(src_fps)), 15)
+    target_fps = min(round(src_fps), 15)
     max_width = 480
     if src_w > max_width:
         target_w = max_width
@@ -129,109 +126,71 @@ async def layhamut(ctx: commands.Context[commands.Bot]) -> None:
             new_img = Image.new("RGB", (target_w, target_h), (0, 0, 0))
             new_img.paste(img, ((target_w - new_width) // 2, 0))
 
-        new_img.save(processed_image_path)
+        # Keep the processed image in memory to avoid slow disk I/O on the Pi
+        in_memory_image = new_img.convert("RGB")
+        frame_bytes = in_memory_image.tobytes()
+        frame_size = (in_memory_image.width, in_memory_image.height)
 
     def process_work() -> None:
-        tmpdir = tempfile.mkdtemp(prefix="layhamut_")
+        # Build ffmpeg command that reads the base video (input 0) and a rawvideo pipe (input 1)
+        # then trims the base, uses the piped frames as the image clip, concatenates, and maps original audio.
+        frames_count = max(1, int(round(img_dur * target_fps)))
+
+        filter_complex = (
+            f"[0:v]trim=0:{final_duration},setpts=PTS-STARTPTS,scale={target_w}:{target_h}[v0];"
+            f"[1:v]format=rgb24,format=yuv420p,setsar=1,trim=duration={img_dur},setpts=PTS-STARTPTS[v1];"
+            f"[v0][v1]concat=n=2:v=1:a=0[outv]"
+        )
+
+        cmd = [
+            "ffmpeg",
+            "-y",
+            "-i",
+            str(base_video),
+            "-f",
+            "rawvideo",
+            "-pix_fmt",
+            "rgb24",
+            "-s",
+            f"{target_w}x{target_h}",
+            "-r",
+            str(target_fps),
+            "-i",
+            "-",
+            "-filter_complex",
+            filter_complex,
+            "-map",
+            "[outv]",
+            "-map",
+            "0:a",
+            "-c:v",
+            "libvpx-vp9",
+            "-cpu-used",
+            "4",
+            "-crf",
+            "36",
+            "-b:v",
+            "0",
+            "-pix_fmt",
+            "yuv420p",
+            "-c:a",
+            "libopus",
+            "-b:a",
+            "64k",
+            str(output_path),
+        ]
+
+        proc = subprocess.Popen(cmd, stdin=subprocess.PIPE)
         try:
-            image_clip = Path(tmpdir) / "image_clip.webm"
-            trimmed = Path(tmpdir) / "trimmed.webm"
-
-            # 1) Create short image clip from the processed image
-            # Use VP8 for WebM output with fast settings for Pi
-            cmd_img = [
-                "ffmpeg",
-                "-y",
-                "-loop",
-                "1",
-                "-i",
-                str(processed_image_path),
-                "-t",
-                str(img_dur),
-                "-r",
-                str(target_fps),
-                "-c:v",
-                "libvpx",
-                "-cpu-used",
-                "5",
-                "-crf",
-                "40",
-                "-b:v",
-                "0",
-                "-pix_fmt",
-                "yuv420p",
-                str(image_clip),
-            ]
-            subprocess.run(cmd_img, check=True)
-
-            # 2) Trim the base video to final_duration (video only)
-            cmd_trim = [
-                "ffmpeg",
-                "-y",
-                "-ss",
-                "0",
-                "-i",
-                str(base_video),
-                "-t",
-                str(final_duration),
-                "-r",
-                str(target_fps),
-                "-vf",
-                f"scale={target_w}:{target_h}",
-                "-c:v",
-                "libvpx",
-                "-cpu-used",
-                "5",
-                "-crf",
-                "40",
-                "-b:v",
-                "0",
-                "-pix_fmt",
-                "yuv420p",
-                "-an",
-                str(trimmed),
-            ]
-            subprocess.run(cmd_trim, check=True)
-
-            # 3) Concat trimmed video + image clip, map original audio from base video
-            cmd_concat = [
-                "ffmpeg",
-                "-y",
-                "-i",
-                str(trimmed),
-                "-i",
-                str(image_clip),
-                "-i",
-                str(base_video),
-                "-filter_complex",
-                "[0:v][1:v]concat=n=2:v=1:a=0[outv]",
-                "-map",
-                "[outv]",
-                "-map",
-                "2:a",
-                "-c:v",
-                "libvpx",
-                "-cpu-used",
-                "5",
-                "-crf",
-                "40",
-                "-b:v",
-                "0",
-                "-pix_fmt",
-                "yuv420p",
-                "-c:a",
-                "libopus",
-                "-b:a",
-                "64k",
-                str(output_path),
-            ]
-            subprocess.run(cmd_concat, check=True)
+            # write identical frames for the duration of the image clip
+            for _ in range(frames_count):
+                proc.stdin.write(frame_bytes)
         finally:
-            # Cleanup temporary files
             try:
-                shutil.rmtree(tmpdir)
+                proc.stdin.close()
             except Exception:
                 pass
+            proc.wait()
 
     loop = asyncio.get_running_loop()
 
@@ -244,7 +203,7 @@ async def layhamut(ctx: commands.Context[commands.Bot]) -> None:
     await ctx.message.delete()
     await ctx.send(file=discord.File(output_path))
 
-    for file in [image_path, processed_image_path, output_path]:
+    for file in [image_path, output_path]:
         with contextlib.suppress(FileNotFoundError):
             file.unlink()
 
