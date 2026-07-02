@@ -1,17 +1,20 @@
+import asyncio
 import contextlib
+import json
 import math
 import operator
 import random
 import secrets
+import shutil
 import subprocess
-from pathlib import Path
-import asyncio
+import tempfile
 from functools import partial
+from pathlib import Path
+
 import cv2
 import discord
 import numpy as np
 from discord.ext import commands
-from movielite import ImageClip, VideoClip, VideoWriter  # pyright: ignore[reportMissingTypeStubs]
 from PIL import Image, ImageDraw, ImageFont
 
 from project.common import get_emote_log, get_hamut_emotes, update_emote_log
@@ -50,7 +53,7 @@ async def stats(ctx: commands.Context[commands.Bot]) -> None:
 @commands.command(name="layhamut")
 async def layhamut(ctx: commands.Context[commands.Bot]) -> None:
     if not ctx.message.attachments:
-        await ctx.send("You didn't attach an image, you retard.")
+        await ctx.send("You didn't attach an image.")
         return
 
     image_path = Path(f"temp_image_{ctx.author.id}.png")
@@ -58,55 +61,176 @@ async def layhamut(ctx: commands.Context[commands.Bot]) -> None:
     processed_image_path = Path(f"processed_image_{ctx.author.id}.png")
 
     await ctx.message.attachments[0].save(image_path)
+    # Use ffprobe to get source video properties (fast) and offload
+    # heavy ffmpeg work to a thread to keep the event loop responsive.
+    base_video = Path("bots/resources/layhamut/layhamut.mp4")
 
-    clip = VideoClip("bots/resources/layhamut/layhamut.mp4")
-    fps = clip.fps
-    frame_width, frame_height = clip.size
+    def ffprobe_info(path: Path) -> tuple[int, int, float, float]:
+        cmd = [
+            "ffprobe",
+            "-v",
+            "error",
+            "-select_streams",
+            "v:0",
+            "-show_entries",
+            "stream=width,height,r_frame_rate",
+            "-show_entries",
+            "format=duration",
+            "-print_format",
+            "json",
+            str(path),
+        ]
+        res = subprocess.run(cmd, capture_output=True, text=True, check=True)
+        data = json.loads(res.stdout)
+        stream = data["streams"][0]
+        width = int(stream["width"])
+        height = int(stream["height"])
+        rfr = stream.get("r_frame_rate", "25/1")
+        num, den = map(int, rfr.split("/"))
+        fps = num / den if den else 25.0
+        duration = float(data["format"]["duration"]) if "format" in data and "duration" in data["format"] else 0.0
+        return width, height, fps, duration
 
-    # Image processing with PIL is identical — no changes needed here
+    # Small semaphore to avoid overloading the Pi with concurrent ffmpeg jobs
+    try:
+        PROCESS_SEMAPHORE
+    except NameError:
+        PROCESS_SEMAPHORE = asyncio.Semaphore(1)
+
+    src_w, src_h, src_fps, src_dur = ffprobe_info(base_video)
+
+    # Target parameters tuned for Raspberry Pi Zero 2 W
+    target_fps = min(int(round(src_fps)), 15)
+    max_width = 480
+    if src_w > max_width:
+        target_w = max_width
+        target_h = int(src_h * (max_width / src_w))
+    else:
+        target_w, target_h = src_w, src_h
+
+    img_dur = 12 / src_fps
+    final_duration = max(0.5, src_dur - img_dur)
+
+    # Resize/pad the uploaded image to the target frame size to avoid ffmpeg doing heavy per-frame scaling
     with Image.open(image_path) as img:
         img_aspect = img.width / img.height
-        frame_aspect = frame_width / frame_height
+        frame_aspect = target_w / target_h
 
         if img_aspect > frame_aspect:
-            new_width = frame_width
-            new_height = int(frame_width / img_aspect)
+            new_width = target_w
+            new_height = int(target_w / img_aspect)
             img = img.resize((new_width, new_height), Image.Resampling.LANCZOS)  # noqa: PLW2901
-            new_img = Image.new("RGB", (frame_width, frame_height), (0, 0, 0))
-            new_img.paste(img, (0, (frame_height - new_height) // 2))
+            new_img = Image.new("RGB", (target_w, target_h), (0, 0, 0))
+            new_img.paste(img, (0, (target_h - new_height) // 2))
         else:
-            new_height = frame_height
-            new_width = int(frame_height * img_aspect)
+            new_height = target_h
+            new_width = int(target_h * img_aspect)
             img = img.resize((new_width, new_height), Image.Resampling.LANCZOS)  # noqa: PLW2901
-            new_img = Image.new("RGB", (frame_width, frame_height), (0, 0, 0))
-            new_img.paste(img, ((frame_width - new_width) // 2, 0))
+            new_img = Image.new("RGB", (target_w, target_h), (0, 0, 0))
+            new_img.paste(img, ((target_w - new_width) // 2, 0))
 
         new_img.save(processed_image_path)
 
-    final_duration = clip.duration - 12 / fps
+    def process_work() -> None:
+        tmpdir = tempfile.mkdtemp(prefix="layhamut_")
+        try:
+            image_clip = Path(tmpdir) / "image_clip.mp4"
+            trimmed = Path(tmpdir) / "trimmed.mp4"
 
-    # subclip(start, end) replaces clip[0:final_duration]
-    video_segment = clip.subclip(0, final_duration)
-    # Mute the segment's own (trimmed) audio so it doesn't overlap
-    # with the full audio we add separately below
-    video_segment.audio.set_volume(0)
+            # 1) Create short image clip from the processed image
+            cmd_img = [
+                "ffmpeg",
+                "-y",
+                "-loop",
+                "1",
+                "-i",
+                str(processed_image_path),
+                "-t",
+                str(img_dur),
+                "-r",
+                str(target_fps),
+                "-c:v",
+                "libx264",
+                "-preset",
+                "ultrafast",
+                "-crf",
+                "28",
+                "-pix_fmt",
+                "yuv420p",
+                str(image_clip),
+            ]
+            subprocess.run(cmd_img, check=True)
 
-    # Preserve original audio through the image frames (same intent as .with_audio())
-    full_audio = clip.audio
+            # 2) Trim the base video to final_duration (video only)
+            cmd_trim = [
+                "ffmpeg",
+                "-y",
+                "-ss",
+                "0",
+                "-i",
+                str(base_video),
+                "-t",
+                str(final_duration),
+                "-r",
+                str(target_fps),
+                "-vf",
+                f"scale={target_w}:{target_h}",
+                "-c:v",
+                "libx264",
+                "-preset",
+                "ultrafast",
+                "-crf",
+                "28",
+                "-pix_fmt",
+                "yuv420p",
+                "-an",
+                str(trimmed),
+            ]
+            subprocess.run(cmd_trim, check=True)
 
-    # start= replaces .with_start() — passed directly to the constructor
-    image_clip = ImageClip(
-        str(processed_image_path),
-        start=final_duration,
-        duration=12 / fps,
-    )
+            # 3) Concat trimmed video + image clip, map original audio from base video
+            cmd_concat = [
+                "ffmpeg",
+                "-y",
+                "-i",
+                str(trimmed),
+                "-i",
+                str(image_clip),
+                "-i",
+                str(base_video),
+                "-filter_complex",
+                "[0:v][1:v]concat=n=2:v=1:a=0[outv]",
+                "-map",
+                "[outv]",
+                "-map",
+                "2:a",
+                "-c:v",
+                "libx264",
+                "-preset",
+                "ultrafast",
+                "-crf",
+                "28",
+                "-c:a",
+                "aac",
+                "-b:a",
+                "128k",
+                str(output_path),
+            ]
+            subprocess.run(cmd_concat, check=True)
+        finally:
+            # Cleanup temporary files
+            try:
+                shutil.rmtree(tmpdir)
+            except Exception:
+                pass
 
-    # VideoWriter + add_clips() replaces CompositeVideoClip + write_videofile()
-    writer = VideoWriter(str(output_path), fps=fps, size=(frame_width, frame_height))
-    writer.add_clips([video_segment, image_clip, full_audio])
-    writer.write()
+    loop = asyncio.get_running_loop()
 
-    clip.close()
+    await PROCESS_SEMAPHORE.acquire()
+    try:
+        await loop.run_in_executor(None, process_work)
+    finally:
+        PROCESS_SEMAPHORE.release()
 
     await ctx.message.delete()
     await ctx.send(file=discord.File(output_path))
@@ -221,9 +345,6 @@ async def wheelhamut(ctx: commands.Context[commands.Bot]) -> None:
         message_text = ctx.message.content.removeprefix("!wheelhamut")
         names = message_text.split(",")
 
-        if not names:
-            raise ValueError("What am I supposed to put on the wheel you dumb fuck?")
-
         n = len(names)
         slice_deg = 360.0 / n
         total_frames = video_fps * spin_seconds
@@ -231,7 +352,6 @@ async def wheelhamut(ctx: commands.Context[commands.Bot]) -> None:
 
         winner_index = random.randint(0, n - 1)  # noqa: S311
         winner_index = winner_index % n
-        winner_name = names[winner_index]
 
         pin_angle = 270.0
         winning_centre_at_zero = winner_index * slice_deg + slice_deg / 2
@@ -247,8 +367,6 @@ async def wheelhamut(ctx: commands.Context[commands.Bot]) -> None:
 
         # Composite background colour
         bg_color = (30, 30, 30)
-
-        print("test")
 
         # Set up ffmpeg process instead of cv2.VideoWriter
         ffmpeg_cmd = [
@@ -279,10 +397,6 @@ async def wheelhamut(ctx: commands.Context[commands.Bot]) -> None:
             output_path,
         ]
         proc = subprocess.Popen(ffmpeg_cmd, stdin=subprocess.PIPE)
-
-        print("test2")
-
-        print(f"Rendering {total_frames} frames → winner: '{winner_name}' (index {winner_index})")
 
         frame_bgr = None
         for frame_idx in range(total_frames):
@@ -318,8 +432,6 @@ async def wheelhamut(ctx: commands.Context[commands.Bot]) -> None:
         if frame_bgr is not None:
             for _ in range(hold_frames):
                 proc.stdin.write(frame_bgr.astype(np.uint8).tobytes())
-        else:
-            raise RuntimeError("I fucked up my soup.")
 
         proc.stdin.close()
         proc.wait()
