@@ -324,7 +324,7 @@ async def wheelhamut(ctx: commands.Context[commands.Bot]) -> None:
         winner_index = random.randint(0, n - 1)  # noqa: S311
         winner_index = winner_index % n
 
-        pin_angle = 270.0
+        pin_angle = 90.0
         winning_centre_at_zero = winner_index * slice_deg + slice_deg / 2
         extra_spins = random.randint(5, 8) * 360  # noqa: S311
         # Normalise so we always spin forward (negative = clockwise in PIL)
