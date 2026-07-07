@@ -311,7 +311,10 @@ async def wheelhamut(ctx: commands.Context[commands.Bot]) -> None:
             return 1 - (1 - t) ** 3
 
         message_text = ctx.message.content.removeprefix("!wheelhamut")
-        names = message_text.split(",")
+        # names = message_text.split(",")
+
+        # split by /n if present, otherwise by comma then strip all entries
+        names = [name.strip() for name in message_text.split("\n") if name.strip()] if "\n" in message_text else [name.strip() for name in message_text.split(",") if name.strip()]
 
         n = len(names)
         slice_deg = 360.0 / n
