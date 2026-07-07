@@ -9,9 +9,7 @@ import subprocess
 from functools import partial
 from pathlib import Path
 
-import cv2
 import discord
-import numpy as np
 from discord.ext import commands
 from PIL import Image, ImageDraw, ImageFont
 
@@ -239,6 +237,11 @@ async def wheelhamut(ctx: commands.Context[commands.Bot]) -> None:
 
     def render_wheel(ctx: commands.Context[commands.Bot]) -> None:
 
+        try:
+            font_hires = ImageFont.truetype("/usr/share/fonts/truetype/dejavu/DejaVuSans-Bold.ttf", font_size * scale)
+        except OSError:
+            font_hires = ImageFont.load_default()
+
         def draw_wheel(names: list[str], angle_offset: float, size: int, radius: int) -> Image.Image:
             """Return a PIL RGBA image of the wheel rotated by angle_offset (degrees)."""
             img = Image.new("RGBA", (size, size), (0, 0, 0, 0))
@@ -247,13 +250,6 @@ async def wheelhamut(ctx: commands.Context[commands.Bot]) -> None:
             cx, cy = size // 2, size // 2
             n = len(names)
             slice_deg = 360.0 / n
-
-            try:
-                font = ImageFont.truetype("/usr/share/fonts/truetype/dejavu/DejaVuSans-Bold.ttf", font_size)
-                font_hires = ImageFont.truetype("/usr/share/fonts/truetype/dejavu/DejaVuSans-Bold.ttf", font_size * scale)
-            except OSError:
-                font = ImageFont.load_default(font_size)
-                font_hires = font
 
             for i, name in enumerate(names):
                 start_angle = angle_offset + i * slice_deg
@@ -301,6 +297,10 @@ async def wheelhamut(ctx: commands.Context[commands.Bot]) -> None:
 
             return img
 
+        def build_wheel_base(names: list[str], size: int, radius: int) -> Image.Image:
+            """Build the static wheel artwork once so each frame only rotates it."""
+            return draw_wheel(names, 0.0, size, radius)
+
         def load_pin(pin_path: str, size: int) -> Image.Image:
             """Load the pin image, resize it, and ensure it has an alpha channel."""
             pin = Image.open(pin_path).convert("RGBA")
@@ -332,6 +332,7 @@ async def wheelhamut(ctx: commands.Context[commands.Bot]) -> None:
 
         # Load assets
         pin_img = load_pin(pin_path, pin_size)
+        wheel_base = build_wheel_base(names, size, wheel_radius)
 
         # Composite background colour
         bg_color = (30, 30, 30)
@@ -347,7 +348,7 @@ async def wheelhamut(ctx: commands.Context[commands.Bot]) -> None:
             "-s",
             f"{size}x{size}",
             "-pix_fmt",
-            "bgr24",
+            "rgb24",
             "-r",
             str(video_fps),
             "-i",
@@ -366,16 +367,14 @@ async def wheelhamut(ctx: commands.Context[commands.Bot]) -> None:
         ]
         proc = subprocess.Popen(ffmpeg_cmd, stdin=subprocess.PIPE)
 
-        frame_bgr = None
+        frame_rgb = None
         for frame_idx in range(total_frames):
             t = frame_idx / (total_frames - 1)  # 0.0 → 1.0
             eased = ease_out_cubic(t)
             current_rotation = eased * total_rotation  # degrees rotated so far
 
-            angle_offset = start_offset - current_rotation  # subtract = clockwise spin
-
-            # Draw wheel
-            wheel = draw_wheel(names, angle_offset, size, wheel_radius)
+            # Rotate the cached wheel artwork instead of redrawing text every frame.
+            wheel = wheel_base.rotate(-current_rotation, resample=Image.Resampling.BICUBIC)
 
             # Composite onto background
             bg = Image.new("RGBA", (size, size), (*bg_color, 255))
@@ -386,10 +385,9 @@ async def wheelhamut(ctx: commands.Context[commands.Bot]) -> None:
             pin_y = int(video_size // 1.21)  # top edge; adjust if your pin image has its point at the bottom
             bg.paste(pin_img, (pin_x, pin_y), pin_img)
 
-            # Convert to BGR for ffmpeg
-            frame_np = np.array(bg.convert("RGB"))
-            frame_bgr = cv2.cvtColor(frame_np, cv2.COLOR_RGB2BGR)
-            proc.stdin.write(frame_bgr.astype(np.uint8).tobytes())
+            # Write RGB bytes directly to ffmpeg; avoid an extra NumPy/OpenCV conversion.
+            frame_rgb = bg.convert("RGB").tobytes()
+            proc.stdin.write(frame_rgb)
 
             if frame_idx % video_fps == 0:
                 print(f"  Frame {frame_idx}/{total_frames} ({int(t * 100)}%)")
@@ -397,9 +395,9 @@ async def wheelhamut(ctx: commands.Context[commands.Bot]) -> None:
         # Hold final frame for 2 seconds
         hold_frames = video_fps * 2
 
-        if frame_bgr is not None:
+        if frame_rgb is not None:
             for _ in range(hold_frames):
-                proc.stdin.write(frame_bgr.astype(np.uint8).tobytes())
+                proc.stdin.write(frame_rgb)
 
         proc.stdin.close()
         proc.wait()
