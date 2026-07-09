@@ -44,7 +44,7 @@ class BahamutBot(commands.Bot):
 
     @override
     async def on_message(self, message: discord.Message) -> None:
-        if self.is_yapping:
+        if self.is_yapping and not message.author.bot:
             self.yap_start = time.perf_counter()
             print(self.yap_start)
         await self.process_commands(message)
