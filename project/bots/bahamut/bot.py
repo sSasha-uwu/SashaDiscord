@@ -46,6 +46,7 @@ class BahamutBot(commands.Bot):
     async def on_message(self, message: discord.Message) -> None:
         if self.is_yapping:
             self.yap_start = time.perf_counter()
+            print(self.yap_start)
         await self.process_commands(message)
 
     async def on_command_completion(self, _ctx: commands.Context[Any]) -> None:
