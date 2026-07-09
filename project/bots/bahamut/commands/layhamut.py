@@ -12,7 +12,7 @@ from PIL import Image
 
 
 class CommandLayhamut(commands.Cog):
-    BASE_VIDEO_PATH = Path("bots/bahamut/resources/layhamut.webm")
+    BASE_VIDEO_PATH = Path("project/bots/bahamut/resources/layhamut.webm")
 
     def __init__(self, bot: commands.Bot) -> None:
         self.bot = bot
