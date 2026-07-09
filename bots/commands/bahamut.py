@@ -8,6 +8,7 @@ import secrets
 import subprocess
 from functools import partial
 from pathlib import Path
+import time
 
 import discord
 from discord.ext import commands
@@ -48,8 +49,9 @@ async def stats(ctx: commands.Context[commands.Bot]) -> None:
 
 @commands.command(name="layhamut")
 async def layhamut(ctx: commands.Context[commands.Bot]) -> None:
+    start = time.perf_counter()
     if not ctx.message.attachments:
-        await ctx.send("You didn't attach an image.")
+        await ctx.send("where image")
         return
 
     image_path = Path(f"temp_image_{ctx.author.id}.png")
@@ -204,6 +206,8 @@ async def layhamut(ctx: commands.Context[commands.Bot]) -> None:
     for file in [image_path, output_path]:
         with contextlib.suppress(FileNotFoundError):
             file.unlink()
+
+    print(f"layhamut command completed in {time.perf_counter() - start} seconds")
 
 
 @commands.command(name="wheelhamut")
