@@ -212,7 +212,6 @@ async def layhamut(ctx: commands.Context[commands.Bot]) -> None:
 
 @commands.command(name="wheelhamut")
 async def wheelhamut(ctx: commands.Context[commands.Bot]) -> None:
-    start = time.perf_counter()
 
     output_path = "wheelhamut_result.mp4"
     pin_path = "bots/resources/wheelhamut/wheelhamut.png"
@@ -417,5 +416,3 @@ async def wheelhamut(ctx: commands.Context[commands.Bot]) -> None:
 
     with contextlib.suppress(FileNotFoundError):
         Path(output_path).unlink()  # noqa: ASYNC240
-
-    print(f"layhamut command completed in {time.perf_counter() - start} seconds")
