@@ -13,7 +13,7 @@ from PIL import Image, ImageDraw, ImageFont
 
 
 class CommandWheelhamut(commands.Cog):
-    PIN_PATH = Path("bots/resources/wheelhamut/wheelhamut.png")
+    PIN_PATH = Path("bots/bahamut/resources/wheelhamut.png")
     FONT_PATH = "/usr/share/fonts/truetype/dejavu/DejaVuSans-Bold.ttf"
 
     VIDEO_SIZE = 360  # Width and height of the output video (square)
