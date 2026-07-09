@@ -10,8 +10,8 @@ from project.common import BAHAMUT_API_KEY, BAHAMUT_COMMANDS, BAHAMUT_ERROR_MESS
 class BahamutBot(commands.Bot):
     is_yapping: bool = False
     emotes: dict[str, str]
-    yap_start: float
-    yap_end: float
+    yap_start: float = 0
+    yap_end: float = 0
 
     def __init__(self) -> None:
         super().__init__(command_prefix="!", intents=discord.Intents.all())
@@ -50,6 +50,6 @@ class BahamutBot(commands.Bot):
         await self.process_commands(message)
 
     async def on_command_completion(self, _ctx: commands.Context[Any]) -> None:
-        if self.is_yapping:
+        if self.is_yapping and self.yap_start != 0:
             self.yap_end = time.perf_counter()
             print(BAHAMUT_YAP_MESSAGE.format(time=self.yap_end - self.yap_start))

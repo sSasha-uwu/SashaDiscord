@@ -185,8 +185,6 @@ class CommandWheelhamut(commands.Cog):
             "zerolatency",
             "-pix_fmt",
             "yuv420p",
-            "-movflags",
-            "+faststart",
             "-f",
             "mp4",
             "pipe:1",
