@@ -207,30 +207,35 @@ class CommandWheelhamut(commands.Cog):
 
         frame_rgb = None
         if proc.stdin is not None:
-            for frame_idx in range(total_frames):
-                t = frame_idx / (total_frames - 1)  # 0.0 -> 1.0
-                eased = cls._ease_out_cubic(t)
-                current_rotation = eased * total_rotation
+            try:
+                for frame_idx in range(total_frames):
+                    t = frame_idx / (total_frames - 1)  # 0.0 -> 1.0
+                    eased = cls._ease_out_cubic(t)
+                    current_rotation = eased * total_rotation
 
-                wheel = wheel_base.rotate(-current_rotation, resample=Image.Resampling.BICUBIC)
+                    wheel = wheel_base.rotate(-current_rotation, resample=Image.Resampling.BICUBIC)
 
-                bg = Image.new("RGBA", (size, size), (*bg_color, 255))
-                bg.paste(wheel, (0, 0), wheel)
+                    bg = Image.new("RGBA", (size, size), (*bg_color, 255))
+                    bg.paste(wheel, (0, 0), wheel)
 
-                pin_x = size // 2 - pin_size // 2
-                pin_y = int(cls.VIDEO_SIZE // 1.21)
-                bg.paste(pin_img, (pin_x, pin_y), pin_img)
+                    pin_x = size // 2 - pin_size // 2
+                    pin_y = int(cls.VIDEO_SIZE // 1.21)
+                    bg.paste(pin_img, (pin_x, pin_y), pin_img)
 
-                frame_rgb = bg.convert("RGB").tobytes()
-                proc.stdin.write(frame_rgb)
-
-            # Hold final frame for 2 seconds
-            hold_frames = cls.VIDEO_FPS * 2
-            if frame_rgb is not None:
-                for _ in range(hold_frames):
+                    frame_rgb = bg.convert("RGB").tobytes()
                     proc.stdin.write(frame_rgb)
 
-            proc.stdin.close()
+                hold_frames = cls.VIDEO_FPS * 2
+                if frame_rgb is not None:
+                    for _ in range(hold_frames):
+                        proc.stdin.write(frame_rgb)
+            except BrokenPipeError:
+                # ffmpeg exited early — fall through so we still join the reader
+                # threads and can report its stderr instead of a bare EPIPE.
+                pass
+            finally:
+                proc.stdin.close()
+
             proc.wait()
             stdout_thread.join()
             stderr_thread.join()
