@@ -1,4 +1,5 @@
 import json
+from multiprocessing import Process
 
 from project.bots.bahamut.bot import BahamutBot
 from project.bots.titan.bot import TitanBot
@@ -8,5 +9,11 @@ if __name__ == "__main__":
     if not EMOTE_LOG.exists():
         with EMOTE_LOG.open(mode="w", encoding="utf-8") as f:
             json.dump({"titan": {}, "bahamut": {}}, f, indent=4)
-    BahamutBot()
-    TitanBot()
+    bahamut_process = Process(target=BahamutBot)
+    titan_process = Process(target=TitanBot)
+
+    bahamut_process.start()
+    titan_process.start()
+
+    bahamut_process.join()
+    titan_process.join()
