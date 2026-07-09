@@ -1,6 +1,7 @@
 import json
 
 from project.bots.bahamut.bot import BahamutBot
+from project.bots.titan.bot import TitanBot
 from project.common import EMOTE_LOG
 
 if __name__ == "__main__":
@@ -8,3 +9,4 @@ if __name__ == "__main__":
         with EMOTE_LOG.open(mode="w", encoding="utf-8") as f:
             json.dump({"titan": {}, "bahamut": {}}, f, indent=4)
     BahamutBot()
+    TitanBot()

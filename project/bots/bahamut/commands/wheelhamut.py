@@ -254,10 +254,6 @@ class CommandWheelhamut(commands.Cog):
         message_text = ctx.message.content.removeprefix("!wheelhamut")
         names = [name.strip() for name in message_text.split("\n") if name.strip()] if "\n" in message_text else [name.strip() for name in message_text.split(",") if name.strip()]
 
-        if len(names) < 2:  # noqa: PLR2004
-            await ctx.send("give me at least 2 names, comma- or newline-separated")
-            return
-
         loop = asyncio.get_running_loop()
         async with self._process_semaphore:
             output_bytes = await loop.run_in_executor(
