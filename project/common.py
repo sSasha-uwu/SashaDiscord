@@ -1,8 +1,6 @@
 import json
 from pathlib import Path
 
-from discord.ext import commands
-
 
 def get_titan_key() -> str:
     if not ENV_FILE.exists():
@@ -16,9 +14,12 @@ def get_bahamut_key() -> str:
     return ENV_FILE.read_text(encoding="utf-8").split("BAHAMUT_API_KEY=")[1].splitlines()[0]
 
 
-EMOTE_LOG = Path("bots/emote_log.json")
+EMOTE_LOG = Path("project/bots/emote_log.json")
 
-ENV_FILE = Path(".env")
+ENV_FILE = Path("project/.env")
+
+BAHAMUT_COMMANDS = Path("project/bots/bahamut/commands")
+TITAN_COMMANDS = Path("project/bots/titan/commands")
 
 BAHAMUT_ERROR_MESSAGE = """
 {explode} i hav braim bramage {explode}
@@ -27,6 +28,9 @@ pls send help
 
 ```{error}```
 """
+
+BAHAMUT_YAP_MESSAGE = "it took my retarded ass {time}s to send this shit."
+TITAN_YAP_MESSAGE = "it took my retarded ass {time}s to send this shit."
 
 TITAN_ERROR_MESSAGE = """
 {cri} i die now thank u foreva {cri}
@@ -38,31 +42,6 @@ my mother is an idiota
 
 TITAN_API_KEY = get_titan_key()
 BAHAMUT_API_KEY = get_bahamut_key()
-
-hamut_emotes: dict[str, str] = {}
-titan_emotes: dict[str, str] = {}
-
-def get_hamut_emotes(ctx: commands.Context[commands.Bot]) -> dict[str, str]:
-    if not hamut_emotes:
-        for guild in ctx.bot.guilds:
-            for emoji in guild.emojis:
-                emoji_raw = str(emoji)
-                if "hamut" in emoji_raw:
-                    emoji_str = emoji_raw.split(":")[1].split(":", maxsplit=1)[0]
-                    hamut_emotes[emoji_str] = emoji_raw
-                    print(f"Loaded Bahamut emote: {emoji_str}")
-    return hamut_emotes
-
-def get_titan_emotes(ctx: commands.Context[commands.Bot]) -> dict[str, str]:
-    if not titan_emotes:
-        for guild in ctx.bot.guilds:
-            for emoji in guild.emojis:
-                emoji_raw = str(emoji)
-                if "tan" in emoji_raw:
-                    emoji_str = emoji_raw.split(":")[1].split(":", maxsplit=1)[0]
-                    titan_emotes[emoji_str] = emoji_raw
-                    print(f"Loaded Titan emote: {emoji_str}")
-    return titan_emotes
 
 
 def get_emote_log(bot: str) -> dict[str, int]:
