@@ -39,6 +39,8 @@ class BahamutBot(commands.Bot):
     ) -> None:
         if isinstance(exception, commands.CommandNotFound):
             return
+        if len(str(exception)) > 1500:
+            exception = commands.CommandError("Error message too long to display")
         await context.send(BAHAMUT_ERROR_MESSAGE.format(error=exception, explode=self.emotes.get("explodehamut", "")))
         raise exception
 
