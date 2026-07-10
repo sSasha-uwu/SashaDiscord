@@ -36,7 +36,7 @@ class CommandLayhamut(commands.Cog):
             )
 
         await ctx.message.delete()
-        await ctx.send(file=discord.File(io.BytesIO(output_bytes), filename="layhamut.webm"))
+        await ctx.send(file=discord.File(io.BytesIO(output_bytes), filename="layhamut.mp4"))
 
     @staticmethod
     def _load_base_video_sync(path: Path) -> tuple[bytes, tuple[int, int, float, float]]:
