@@ -9,6 +9,7 @@ if __name__ == "__main__":
     if not EMOTE_LOG.exists():
         with EMOTE_LOG.open(mode="w", encoding="utf-8") as f:
             json.dump({"titan": {}, "bahamut": {}}, f, indent=4)
+
     bahamut_process = Process(target=BahamutBot)
     titan_process = Process(target=TitanBot)
 

@@ -12,15 +12,31 @@ from PIL import Image
 
 
 class CommandLayhamut(commands.Cog):
-    BASE_VIDEO_PATH = Path("project/bots/bahamut/resources/layhamut.webm")
-
     def __init__(self, bot: commands.Bot) -> None:
         self.bot = bot
         self._process_semaphore = asyncio.Semaphore(1)
-        # Loaded once, synchronously, at cog construction — the base video
-        # is a static asset that never changes, so there's no need to
-        # re-read it from disk or re-run ffprobe on every command call.
-        self._base_video_bytes, self._base_video_info = self._load_base_video_sync(self.BASE_VIDEO_PATH)
+        self._base_video_bytes, self._base_video_info = self._load_base_video_sync(Path("project/bots/bahamut/resources/layhamut.webm"))
+
+    @commands.command(name="layhamut", help="have bahamut execute someone")
+    async def layhamut(self, ctx: commands.Context[commands.Bot]) -> None:
+        if not ctx.message.attachments:
+            await ctx.send("where image")
+            return
+
+        image_bytes = await ctx.message.attachments[0].read()
+
+        loop = asyncio.get_running_loop()
+        async with self._process_semaphore:
+            output_bytes = await loop.run_in_executor(
+                None,
+                self._render_layhamut,
+                image_bytes,
+                self._base_video_bytes,
+                self._base_video_info,
+            )
+
+        await ctx.message.delete()
+        await ctx.send(file=discord.File(io.BytesIO(output_bytes), filename="layhamut.webm"))
 
     @staticmethod
     def _load_base_video_sync(path: Path) -> tuple[bytes, tuple[int, int, float, float]]:
@@ -122,21 +138,23 @@ class CommandLayhamut(commands.Cog):
             "-map",
             "0:a",
             "-c:v",
-            "libvpx-vp9",
-            "-cpu-used",
-            "4",
+            "libx264",
+            "-preset",
+            "ultrafast",
+            "-tune",
+            "zerolatency",
             "-crf",
-            "36",
-            "-b:v",
-            "0",
+            "30",
             "-pix_fmt",
             "yuv420p",
             "-c:a",
             "libopus",
             "-b:a",
             "64k",
+            "-movflags",
+            "frag_keyframe+empty_moov+default_base_moof",
             "-f",
-            "webm",
+            "mp4",
             "pipe:1",
         ]
 
@@ -165,27 +183,6 @@ class CommandLayhamut(commands.Cog):
             raise RuntimeError(msg)
 
         return stdout_data
-
-    @commands.command(name="layhamut", help="have bahamut execute someone")
-    async def layhamut(self, ctx: commands.Context[commands.Bot]) -> None:
-        if not ctx.message.attachments:
-            await ctx.send("where image")
-            return
-
-        image_bytes = await ctx.message.attachments[0].read()
-
-        loop = asyncio.get_running_loop()
-        async with self._process_semaphore:
-            output_bytes = await loop.run_in_executor(
-                None,
-                self._render_layhamut,
-                image_bytes,
-                self._base_video_bytes,
-                self._base_video_info,
-            )
-
-        await ctx.message.delete()
-        await ctx.send(file=discord.File(io.BytesIO(output_bytes), filename="layhamut.webm"))
 
 
 async def setup(bot: commands.Bot) -> None:

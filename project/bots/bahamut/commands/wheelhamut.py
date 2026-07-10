@@ -16,7 +16,7 @@ class CommandWheelhamut(commands.Cog):
     PIN_PATH = Path("project/bots/bahamut/resources/wheelhamut.png")
     FONT_PATH = "/usr/share/fonts/truetype/dejavu/DejaVuSans-Bold.ttf"
 
-    VIDEO_SIZE = 360  # Width and height of the output video (square)
+    VIDEO_SIZE = 360
     WHEEL_RADIUS = int(VIDEO_SIZE // 2.5)
     VIDEO_FPS = 15
     SPIN_SECONDS = 5
@@ -40,16 +40,27 @@ class CommandWheelhamut(commands.Cog):
         "#6A4C93",
     )
 
-    _pin_img: Image.Image
-    _font_hires: ImageFont.FreeTypeFont | ImageFont.ImageFont
-
     def __init__(self, bot: commands.Bot) -> None:
         self.bot = bot
         self._process_semaphore = asyncio.Semaphore(1)
-        # Static assets loaded once at cog construction — the pin image
-        # and font never change, so there's no need to hit disk or
-        # re-parse the font file on every command call.
         self._pin_img, self._font_hires = self._load_assets_sync(self.PIN_PATH, self.PIN_SIZE, self.FONT_SIZE, self.SCALE, self.FONT_PATH)
+
+    @commands.command(name="wheelhamut", help="spin da wheel")
+    async def wheelhamut(self, ctx: commands.Context[commands.Bot]) -> None:
+        message_text = ctx.message.content.removeprefix("!wheelhamut")
+        names = [name.strip() for name in message_text.split("\n") if name.strip()] if "\n" in message_text else [name.strip() for name in message_text.split(",") if name.strip()]
+
+        loop = asyncio.get_running_loop()
+        async with self._process_semaphore:
+            output_bytes = await loop.run_in_executor(
+                None,
+                self._render_wheel,
+                names,
+                self._pin_img,
+                self._font_hires,
+            )
+
+        await ctx.send(file=discord.File(io.BytesIO(output_bytes), filename="wheelhamut_result.mp4"))
 
     @staticmethod
     def _load_assets_sync(
@@ -135,7 +146,7 @@ class CommandWheelhamut(commands.Cog):
         return 1 - (1 - t) ** 3
 
     @classmethod
-    def _render_wheel(
+    def _render_wheel(  # noqa: PLR0915
         cls,
         names: list[str],
         pin_img: Image.Image,
@@ -156,7 +167,6 @@ class CommandWheelhamut(commands.Cog):
         start_offset = 0.0
         total_rotation = extra_spins + (pin_angle - winning_centre_at_zero - start_offset) % 360
 
-        # Build the static wheel artwork once so each frame only rotates it.
         wheel_base = cls._draw_wheel(names, 0.0, size, radius, font_hires)
 
         bg_color = (30, 30, 30)
@@ -193,9 +203,6 @@ class CommandWheelhamut(commands.Cog):
         ]
         proc = subprocess.Popen(ffmpeg_cmd, stdin=subprocess.PIPE, stdout=subprocess.PIPE, stderr=subprocess.PIPE)
 
-        # Drain stdout/stderr on background threads *while* we write stdin
-        # progressively below — without this, ffmpeg's stdout pipe buffer
-        # can fill up and deadlock against our still-in-progress stdin writes.
         stdout_chunks: list[bytes] = []
         stderr_chunks: list[bytes] = []
 
@@ -211,7 +218,7 @@ class CommandWheelhamut(commands.Cog):
         if proc.stdin is not None:
             try:
                 for frame_idx in range(total_frames):
-                    t = frame_idx / (total_frames - 1)  # 0.0 -> 1.0
+                    t = frame_idx / (total_frames - 1)
                     eased = cls._ease_out_cubic(t)
                     current_rotation = eased * total_rotation
 
@@ -232,8 +239,6 @@ class CommandWheelhamut(commands.Cog):
                     for _ in range(hold_frames):
                         proc.stdin.write(frame_rgb)
             except BrokenPipeError:
-                # ffmpeg exited early — fall through so we still join the reader
-                # threads and can report its stderr instead of a bare EPIPE.
                 pass
             finally:
                 proc.stdin.close()
@@ -248,23 +253,6 @@ class CommandWheelhamut(commands.Cog):
             raise RuntimeError(msg)
 
         return b"".join(stdout_chunks)
-
-    @commands.command(name="wheelhamut", help="spin da wheel")
-    async def wheelhamut(self, ctx: commands.Context[commands.Bot]) -> None:
-        message_text = ctx.message.content.removeprefix("!wheelhamut")
-        names = [name.strip() for name in message_text.split("\n") if name.strip()] if "\n" in message_text else [name.strip() for name in message_text.split(",") if name.strip()]
-
-        loop = asyncio.get_running_loop()
-        async with self._process_semaphore:
-            output_bytes = await loop.run_in_executor(
-                None,
-                self._render_wheel,
-                names,
-                self._pin_img,
-                self._font_hires,
-            )
-
-        await ctx.send(file=discord.File(io.BytesIO(output_bytes), filename="wheelhamut_result.mp4"))
 
 
 async def setup(bot: commands.Bot) -> None:
